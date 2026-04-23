@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 export async function marcarPagoRecibido(negocioId: string, proximopagoActual: string | null) {
@@ -20,7 +21,8 @@ export async function marcarPagoRecibido(negocioId: string, proximopagoActual: s
   revalidatePath('/dashboard')
 }
 
-export async function crearNegocio(data: {
+export async function crearCliente(data: {
+  // Negocio
   nombre: string
   razonsocial?: string
   rubro?: string
@@ -29,10 +31,26 @@ export async function crearNegocio(data: {
   estado: 'active' | 'trial' | 'inactive'
   preciomensual?: number
   proximopago?: string
+  // Admin del negocio
+  adminNombre: string
+  adminEmail: string
+  adminPassword: string
 }) {
   const supabase = await createClient()
+  const adminClient = createAdminClient()
 
-  const { error } = await supabase.from('negocio').insert({
+  // 1. Crear tenant
+  const planMap: Record<string, string> = { basic: 'starter', pro: 'pro', enterprise: 'enterprise' }
+  const { data: tenant, error: tenantError } = await supabase
+    .from('tenant')
+    .insert({ nombre: data.nombre, plan: planMap[data.plantipo] ?? 'starter', activo: true })
+    .select('id')
+    .single()
+
+  if (tenantError) throw new Error(`Error al crear tenant: ${tenantError.message}`)
+
+  // 2. Crear negocio
+  const { error: negocioError } = await supabase.from('negocio').insert({
     nombre: data.nombre,
     razonsocial: data.razonsocial ?? null,
     rubro: data.rubro ?? null,
@@ -44,8 +62,43 @@ export async function crearNegocio(data: {
     fechacreacion: new Date().toISOString().split('T')[0],
   })
 
-  if (error) throw new Error(error.message)
+  if (negocioError) {
+    // Rollback tenant
+    await supabase.from('tenant').delete().eq('id', tenant.id)
+    throw new Error(`Error al crear negocio: ${negocioError.message}`)
+  }
+
+  // 3. Crear usuario en Supabase Auth (email ya confirmado)
+  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+    email: data.adminEmail,
+    password: data.adminPassword,
+    user_metadata: { nombre: data.adminNombre },
+    email_confirm: true,
+  })
+
+  if (authError) {
+    // Rollback tenant y negocio
+    await supabase.from('tenant').delete().eq('id', tenant.id)
+    await supabase.from('negocio').delete().eq('nombre', data.nombre)
+    if (authError.message.includes('already registered')) {
+      throw new Error('El email ya está registrado en el sistema')
+    }
+    throw new Error(`Error al crear usuario: ${authError.message}`)
+  }
+
+  // 4. Upsert usuario con rol admin y tenant correcto
+  // (el trigger lo crea con rol 'cliente' y tenant de CrystalPyme; lo sobreescribimos)
+  const { error: usuarioError } = await supabase.from('usuario').upsert({
+    id: authData.user.id,
+    nombre: data.adminNombre,
+    rol: 'admin',
+    tenant_id: tenant.id,
+    activo: true,
+  })
+
+  if (usuarioError) throw new Error(`Error al configurar usuario: ${usuarioError.message}`)
 
   revalidatePath('/dashboard')
   revalidatePath('/admin/negocios')
+  revalidatePath('/admin/usuarios')
 }

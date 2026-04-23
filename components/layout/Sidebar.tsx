@@ -3,22 +3,27 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingCart, Package, Users, Megaphone,
-  Settings, LogOut, Shield, UserCog,
+  Settings, LogOut, Building2, UserCog, UsersRound,
+  CreditCard, ListChecks,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Usuario } from '@/types'
 
+// Superadmin gestiona el SaaS; admin/vendedor gestionan su negocio
 const NAV_ITEMS = [
-  { label: 'Dashboard',  href: '/dashboard',             icon: LayoutDashboard, roles: ['superadmin','admin','vendedor'] },
-  { label: 'Ventas',     href: '/dashboard/ventas',      icon: ShoppingCart,    roles: ['superadmin','admin','vendedor'] },
-  { label: 'Productos',  href: '/dashboard/productos',   icon: Package,         roles: ['superadmin','admin','vendedor'] },
-  { label: 'Clientes',   href: '/dashboard/clientes',    icon: Users,           roles: ['superadmin','admin','vendedor'] },
-  { label: 'Marketing',  href: '/dashboard/marketing',   icon: Megaphone,       roles: ['superadmin','admin'] },
+  { label: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard, roles: ['superadmin','admin','vendedor'] },
+  { label: 'Negocios',    href: '/admin/negocios',        icon: Building2,       roles: ['superadmin'] },
+  { label: 'Planes',      href: '/admin/planes',          icon: ListChecks,      roles: ['superadmin'] },
+  { label: 'Facturación', href: '/admin/facturacion',     icon: CreditCard,      roles: ['superadmin'] },
+  { label: 'Ventas',      href: '/dashboard/ventas',      icon: ShoppingCart,    roles: ['admin','vendedor'] },
+  { label: 'Productos',   href: '/dashboard/productos',   icon: Package,         roles: ['admin','vendedor'] },
+  { label: 'Clientes',    href: '/dashboard/clientes',    icon: Users,           roles: ['admin','vendedor'] },
+  { label: 'Marketing',   href: '/dashboard/marketing',   icon: Megaphone,       roles: ['admin'] },
+  { label: 'Mi equipo',   href: '/dashboard/equipo',      icon: UsersRound,      roles: ['admin'] },
 ]
 
 const ADMIN_ITEMS = [
-  { label: 'Usuarios',      href: '/admin/usuarios',         icon: UserCog, roles: ['superadmin'] },
-  { label: 'Negocios',      href: '/admin/negocios',         icon: Shield,  roles: ['superadmin'] },
+  { label: 'Usuarios',      href: '/admin/usuarios',          icon: UserCog,  roles: ['superadmin'] },
   { label: 'Configuración', href: '/dashboard/configuracion', icon: Settings, roles: ['superadmin','admin'] },
 ]
 
@@ -83,9 +88,7 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
                   className={`shrink-0 ${active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500'}`}
                 />
                 <span className="flex-1">{item.label}</span>
-                {active && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
-                )}
+                {active && <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />}
               </Link>
             )
           })}
@@ -95,7 +98,7 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
           <div className="mt-6">
             <div className="px-3 mb-2">
               <span className="text-[10px] font-semibold text-gray-400 dark:text-slate-600 uppercase tracking-widest">
-                Administración
+                Sistema
               </span>
             </div>
             <div className="space-y-0.5">
@@ -116,9 +119,7 @@ export default function Sidebar({ usuario }: { usuario: Usuario }) {
                       className={`shrink-0 ${active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500'}`}
                     />
                     <span className="flex-1">{item.label}</span>
-                    {active && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
-                    )}
+                    {active && <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />}
                   </Link>
                 )
               })}

@@ -1,7 +1,8 @@
 export type Role = 'superadmin' | 'admin' | 'vendedor' | 'cliente'
 export type Plan = 'free' | 'starter' | 'pro' | 'enterprise'
 export type TenantPlan = 'basic' | 'pro' | 'enterprise'
-export type NegocioEstado = 'active' | 'inactive' | 'trial'
+export type NegocioEstado = 'active' | 'inactive' | 'trial' | 'suspendido'
+export type PagoEstado = 'pagado' | 'pendiente' | 'fallido'
 
 export interface Usuario {
   id: string
@@ -32,12 +33,39 @@ export interface Negocio {
   razonsocial?: string | null
   rubro?: string | null
   direccion?: string | null
+  email?: string | null
   estado: NegocioEstado
   fechacreacion: string
   proximopago?: string | null
   preciomensual?: number | null
   plantipo: TenantPlan
+  ultima_actividad?: string | null
   created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface PlanSaaS {
+  id: string
+  nombre: string
+  precio: number
+  intervalo: 'mensual' | 'anual'
+  descripcion?: string | null
+  limite_productos?: number | null
+  limite_usuarios?: number | null
+  activo: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Pago {
+  id: string
+  negocio_id: string
+  monto: number
+  fecha: string
+  estado: PagoEstado
+  notas?: string | null
+  metodo: string
+  created_at: string
 }
 
 export interface Articulo {

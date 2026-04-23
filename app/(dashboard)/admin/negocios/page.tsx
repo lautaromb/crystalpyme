@@ -1,10 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Building2, Plus } from 'lucide-react'
-
-const ESTADO_BADGE: Record<string, string> = { active: 'badge-green', inactive: 'badge-red', trial: 'badge-yellow' }
-const ESTADO_LABEL: Record<string, string> = { active: 'Activo', inactive: 'Inactivo', trial: 'Trial' }
-const PLAN_BADGE: Record<string, string> = { basic: 'badge-gray', pro: 'badge-blue', enterprise: 'badge-red' }
+import type { Negocio } from '@/types'
+import NegociosAdminTable from './NegociosAdminTable'
 
 export default async function NegociosPage() {
   const supabase = await createClient()
@@ -12,47 +9,57 @@ export default async function NegociosPage() {
   const { data: yo } = await supabase.from('usuario').select('rol').eq('id', user!.id).single()
   if (yo?.rol !== 'superadmin') redirect('/dashboard')
 
-  const { data: negocios } = await supabase.from('negocio').select('*').order('fechacreacion', { ascending: false })
+  const { data: negocios } = await supabase
+    .from('negocio')
+    .select('*')
+    .order('fechacreacion', { ascending: false })
+
+  const lista = (negocios ?? []) as Negocio[]
+
+  const total = lista.length
+  const activos = lista.filter(n => n.estado === 'active').length
+  const trial = lista.filter(n => n.estado === 'trial').length
+  const suspendidos = lista.filter(n => n.estado === 'suspendido').length
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-bold text-2xl text-slate-100">Negocios</h1>
-          <p className="text-sm text-slate-500 mt-1">{negocios?.length ?? 0} negocios registrados</p>
+          <h1 className="page-header">Clientes</h1>
+          <p className="text-sm text-slate-500 mt-1.5 ml-4">
+            {total} {total === 1 ? 'negocio registrado' : 'negocios registrados'}
+          </p>
         </div>
-        <button className="btn-primary"><Plus size={15} /> Nuevo negocio</button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {negocios?.map(n => (
-          <div key={n.id} className="card-hover">
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
-                <Building2 size={18} className="text-sky-400" />
-              </div>
-              <div className="flex gap-2">
-                <span className={PLAN_BADGE[n.plantipo] ?? 'badge-gray'}>{n.plantipo}</span>
-                <span className={ESTADO_BADGE[n.estado] ?? 'badge-gray'}>{ESTADO_LABEL[n.estado]}</span>
-              </div>
-            </div>
-            <h3 className="font-bold text-slate-100 mb-0.5">{n.nombre}</h3>
-            {n.razonsocial && <p className="text-xs text-slate-500 mb-3">{n.razonsocial}</p>}
-            <div className="divider" />
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div><span className="text-slate-600">Rubro</span><p className="text-slate-400 mt-0.5">{n.rubro ?? '—'}</p></div>
-              <div><span className="text-slate-600">Mensualidad</span>
-                <p className="text-slate-400 mt-0.5">{n.preciomensual ? `$${Number(n.preciomensual).toLocaleString('es-AR')}` : '—'}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-        {!negocios?.length && (
-          <div className="col-span-full card flex flex-col items-center justify-center py-16 text-center">
-            <Building2 size={40} className="text-slate-700 mb-3" />
-            <p className="text-slate-500 text-sm">No hay negocios registrados todavía</p>
-            <button className="btn-primary mt-4"><Plus size={14} /> Crear el primero</button>
-          </div>
-        )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="card">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Total</p>
+          <p className="text-3xl font-bold text-blue-600">{total}</p>
+          <p className="text-xs text-slate-500 mt-0.5">negocios</p>
+        </div>
+        <div className="card">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Activos</p>
+          <p className="text-3xl font-bold text-emerald-600">{activos}</p>
+          <p className="text-xs text-slate-500 mt-0.5">con plan activo</p>
+        </div>
+        <div className="card">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Trial</p>
+          <p className="text-3xl font-bold text-amber-600">{trial}</p>
+          <p className="text-xs text-slate-500 mt-0.5">en período de prueba</p>
+        </div>
+        <div className="card">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Suspendidos</p>
+          <p className="text-3xl font-bold text-red-600">{suspendidos}</p>
+          <p className="text-xs text-slate-500 mt-0.5">sin acceso activo</p>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div>
+        <NegociosAdminTable negocios={lista} />
       </div>
     </div>
   )

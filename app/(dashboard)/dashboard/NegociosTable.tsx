@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from 'react'
 import { ArrowUpRight, CheckCircle2, ChevronUp, ChevronDown, ChevronsUpDown, Search, SlidersHorizontal, Plus } from 'lucide-react'
 import { marcarPagoRecibido } from './actions'
+// crearCliente se usa dentro de NuevoClienteModal
 import NuevoClienteModal from './NuevoClienteModal'
 
 type Negocio = {
