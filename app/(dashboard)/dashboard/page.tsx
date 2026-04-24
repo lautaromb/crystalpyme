@@ -108,7 +108,7 @@ export default async function DashboardPage() {
   primerDiaMes.setDate(1)
   primerDiaMes.setHours(0, 0, 0, 0)
 
-  const [negociosRes, usuariosRes] = await Promise.all([
+  const [negociosRes, usuariosRes, planesRes] = await Promise.all([
     supabase
       .from('negocio')
       .select('id, nombre, rubro, estado, preciomensual, proximopago, plantipo, fechacreacion')
@@ -118,11 +118,17 @@ export default async function DashboardPage() {
       .select('id', { count: 'exact' })
       .eq('activo', true)
       .is('deleted_at', null),
+    supabase
+      .from('plan')
+      .select('id, nombre, precio')
+      .eq('activo', true)
+      .order('precio'),
   ])
 
   const hoy = new Date()
   const en7dias = new Date(hoy.getTime() + 7 * 24 * 60 * 60 * 1000)
   const todos = negociosRes.data ?? []
+  const planesActivos = planesRes.data ?? []
 
   const activos = todos.filter(n => n.estado === 'active')
   const trials = todos.filter(n => n.estado === 'trial')
@@ -275,31 +281,35 @@ export default async function DashboardPage() {
       {/* Tabla de negocios + distribución por plan */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <NegociosTable negocios={todos} />
+          <NegociosTable negocios={todos} planes={planesActivos} />
         </div>
 
         {/* Distribución por plan */}
         <div className="card">
           <h2 className="font-semibold text-gray-900 text-sm mb-4">Distribución por plan</h2>
           <div className="space-y-3">
-            {(['enterprise', 'pro', 'basic'] as const).map(plan => {
-              const count = porPlan[plan] ?? 0
-              const pct = todos.length > 0 ? Math.round((count / todos.length) * 100) : 0
-              return (
-                <div key={plan}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700 capitalize">{plan}</span>
-                    <span className="text-sm font-bold text-gray-900">{count}</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5">
-                    <div
-                      className={`h-1.5 rounded-full ${plan === 'enterprise' ? 'bg-blue-500' : plan === 'pro' ? 'bg-emerald-500' : 'bg-gray-400'}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
+            {planesActivos.length > 0
+              ? planesActivos.map((plan, i) => {
+                  const count = porPlan[plan.nombre] ?? 0
+                  const pct = todos.length > 0 ? Math.round((count / todos.length) * 100) : 0
+                  const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500']
+                  return (
+                    <div key={plan.id}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-700">{plan.nombre}</span>
+                        <span className="text-sm font-bold text-gray-900">{count}</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full ${colors[i % colors.length]}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })
+              : <p className="text-xs text-gray-400 text-center py-4">Sin planes configurados</p>
+            }
           </div>
 
           <div className="divider" />

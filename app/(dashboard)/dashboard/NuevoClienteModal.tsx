@@ -7,6 +7,7 @@ import { crearCliente } from './actions'
 type Props = {
   isOpen: boolean
   onClose: () => void
+  planes: { id: string; nombre: string }[]
 }
 
 type FormData = {
@@ -15,7 +16,7 @@ type FormData = {
   razonsocial: string
   rubro: string
   direccion: string
-  plantipo: 'basic' | 'pro' | 'enterprise'
+  plantipo: string
   estado: 'active' | 'trial' | 'inactive'
   preciomensual: string
   proximopago: string
@@ -33,7 +34,7 @@ const INITIAL: FormData = {
   razonsocial: '',
   rubro: '',
   direccion: '',
-  plantipo: 'basic',
+  plantipo: '',
   estado: 'trial',
   preciomensual: '',
   proximopago: '',
@@ -102,7 +103,7 @@ function Field({
   )
 }
 
-export default function NuevoClienteModal({ isOpen, onClose }: Props) {
+export default function NuevoClienteModal({ isOpen, onClose, planes }: Props) {
   const [form, setForm] = useState<FormData>(INITIAL)
   const [touched, setTouched] = useState<Touched>({})
   const [submitting, setSubmitting] = useState(false)
@@ -309,9 +310,10 @@ export default function NuevoClienteModal({ isOpen, onClose }: Props) {
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Plan" required error={undefined}>
                       <select className="input" value={form.plantipo} onChange={set('plantipo')} disabled={submitting}>
-                        <option value="basic">Basic</option>
-                        <option value="pro">Pro</option>
-                        <option value="enterprise">Enterprise</option>
+                        <option value="" disabled>Seleccioná un plan</option>
+                        {planes.map(p => (
+                          <option key={p.id} value={p.nombre}>{p.nombre}</option>
+                        ))}
                       </select>
                     </Field>
                     <Field label="Estado" required error={undefined}>

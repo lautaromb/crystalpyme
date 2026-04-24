@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import type { Negocio } from '@/types'
+import type { Negocio, PlanSaaS } from '@/types'
 import NegociosAdminTable from './NegociosAdminTable'
 
 export default async function NegociosPage() {
@@ -9,12 +9,13 @@ export default async function NegociosPage() {
   const { data: yo } = await supabase.from('usuario').select('rol').eq('id', user!.id).single()
   if (yo?.rol !== 'superadmin') redirect('/dashboard')
 
-  const { data: negocios } = await supabase
-    .from('negocio')
-    .select('*')
-    .order('fechacreacion', { ascending: false })
+  const [{ data: negocios }, { data: planes }] = await Promise.all([
+    supabase.from('negocio').select('*').order('fechacreacion', { ascending: false }),
+    supabase.from('plan').select('*').eq('activo', true).order('precio'),
+  ])
 
   const lista = (negocios ?? []) as Negocio[]
+  const listaPlanes = (planes ?? []) as PlanSaaS[]
 
   const total = lista.length
   const activos = lista.filter(n => n.estado === 'active').length
@@ -59,7 +60,7 @@ export default async function NegociosPage() {
 
       {/* Table */}
       <div>
-        <NegociosAdminTable negocios={lista} />
+        <NegociosAdminTable negocios={lista} planes={listaPlanes} />
       </div>
     </div>
   )

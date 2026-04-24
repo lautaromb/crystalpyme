@@ -57,7 +57,7 @@ function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; s
     : <ChevronDown size={12} className="text-blue-500" />
 }
 
-export default function NegociosTable({ negocios }: { negocios: Negocio[] }) {
+export default function NegociosTable({ negocios, planes }: { negocios: Negocio[]; planes: { id: string; nombre: string }[] }) {
   const [busqueda, setBusqueda] = useState('')
   const [filtroPlan, setFiltroPlan] = useState('todos')
   const [filtroEstado, setFiltroEstado] = useState('todos')
@@ -116,7 +116,7 @@ export default function NegociosTable({ negocios }: { negocios: Negocio[] }) {
 
   return (
     <>
-    <NuevoClienteModal isOpen={modalAbierto} onClose={() => setModalAbierto(false)} />
+    <NuevoClienteModal isOpen={modalAbierto} onClose={() => setModalAbierto(false)} planes={planes} />
     <div className="card p-0 overflow-hidden">
       {/* Toolbar */}
       <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
@@ -137,9 +137,9 @@ export default function NegociosTable({ negocios }: { negocios: Negocio[] }) {
             onChange={e => setFiltroPlan(e.target.value)}
           >
             <option value="todos">Todos los planes</option>
-            <option value="basic">Basic</option>
-            <option value="pro">Pro</option>
-            <option value="enterprise">Enterprise</option>
+            {planes.map(p => (
+              <option key={p.id} value={p.nombre}>{p.nombre}</option>
+            ))}
           </select>
           <select
             className="input py-2 text-xs w-auto"

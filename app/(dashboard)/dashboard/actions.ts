@@ -22,16 +22,14 @@ export async function marcarPagoRecibido(negocioId: string, proximopagoActual: s
 }
 
 export async function crearCliente(data: {
-  // Negocio
   nombre: string
   razonsocial?: string
   rubro?: string
   direccion?: string
-  plantipo: 'basic' | 'pro' | 'enterprise'
+  plantipo: string
   estado: 'active' | 'trial' | 'inactive'
   preciomensual?: number
   proximopago?: string
-  // Admin del negocio
   adminNombre: string
   adminEmail: string
   adminPassword: string
@@ -40,30 +38,33 @@ export async function crearCliente(data: {
   const adminClient = createAdminClient()
 
   // 1. Crear tenant
-  const planMap: Record<string, string> = { basic: 'starter', pro: 'pro', enterprise: 'enterprise' }
   const { data: tenant, error: tenantError } = await supabase
     .from('tenant')
-    .insert({ nombre: data.nombre, plan: planMap[data.plantipo] ?? 'starter', activo: true })
+    .insert({ nombre: data.nombre, plan: 'starter', activo: true })
     .select('id')
     .single()
 
   if (tenantError) throw new Error(`Error al crear tenant: ${tenantError.message}`)
 
-  // 2. Crear negocio
-  const { error: negocioError } = await supabase.from('negocio').insert({
-    nombre: data.nombre,
-    razonsocial: data.razonsocial ?? null,
-    rubro: data.rubro ?? null,
-    direccion: data.direccion ?? null,
-    plantipo: data.plantipo,
-    estado: data.estado,
-    preciomensual: data.preciomensual ?? null,
-    proximopago: data.proximopago ?? null,
-    fechacreacion: new Date().toISOString().split('T')[0],
-  })
+  // 2. Crear negocio vinculado al tenant
+  const { data: negocio, error: negocioError } = await supabase
+    .from('negocio')
+    .insert({
+      nombre: data.nombre,
+      razonsocial: data.razonsocial ?? null,
+      rubro: data.rubro ?? null,
+      direccion: data.direccion ?? null,
+      plantipo: data.plantipo,
+      estado: data.estado,
+      preciomensual: data.preciomensual ?? null,
+      proximopago: data.proximopago ?? null,
+      tenant_id: tenant.id,
+      fechacreacion: new Date().toISOString().split('T')[0],
+    })
+    .select('id')
+    .single()
 
   if (negocioError) {
-    // Rollback tenant
     await supabase.from('tenant').delete().eq('id', tenant.id)
     throw new Error(`Error al crear negocio: ${negocioError.message}`)
   }
@@ -77,24 +78,24 @@ export async function crearCliente(data: {
   })
 
   if (authError) {
-    // Rollback tenant y negocio
+    await supabase.from('negocio').delete().eq('id', negocio.id)
     await supabase.from('tenant').delete().eq('id', tenant.id)
-    await supabase.from('negocio').delete().eq('nombre', data.nombre)
     if (authError.message.includes('already registered')) {
       throw new Error('El email ya está registrado en el sistema')
     }
     throw new Error(`Error al crear usuario: ${authError.message}`)
   }
 
-  // 4. Upsert usuario con rol admin y tenant correcto
-  // (el trigger lo crea con rol 'cliente' y tenant de CrystalPyme; lo sobreescribimos)
-  const { error: usuarioError } = await supabase.from('usuario').upsert({
-    id: authData.user.id,
-    nombre: data.adminNombre,
-    rol: 'admin',
-    tenant_id: tenant.id,
-    activo: true,
-  })
+  // 4. Upsert usuario con rol admin — usamos adminClient para saltear RLS
+  const { error: usuarioError } = await adminClient
+    .from('usuario')
+    .upsert({
+      id: authData.user.id,
+      nombre: data.adminNombre,
+      rol: 'admin',
+      tenant_id: tenant.id,
+      activo: true,
+    }, { onConflict: 'id' })
 
   if (usuarioError) throw new Error(`Error al configurar usuario: ${usuarioError.message}`)
 

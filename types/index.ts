@@ -1,6 +1,6 @@
 export type Role = 'superadmin' | 'admin' | 'vendedor' | 'cliente'
 export type Plan = 'free' | 'starter' | 'pro' | 'enterprise'
-export type TenantPlan = 'basic' | 'pro' | 'enterprise'
+export type TenantPlan = string
 export type NegocioEstado = 'active' | 'inactive' | 'trial' | 'suspendido'
 export type PagoEstado = 'pagado' | 'pendiente' | 'fallido'
 
@@ -29,6 +29,7 @@ export interface Tenant {
 
 export interface Negocio {
   id: string
+  tenant_id?: string | null
   nombre: string
   razonsocial?: string | null
   rubro?: string | null

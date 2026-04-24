@@ -2,12 +2,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { X, AlertCircle, CheckCircle2, Pencil } from 'lucide-react'
 import { editarNegocio } from './actions'
-import type { Negocio, TenantPlan, NegocioEstado } from '@/types'
+import type { Negocio, TenantPlan, NegocioEstado, PlanSaaS } from '@/types'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
   negocio: Negocio
+  planes: PlanSaaS[]
 }
 
 interface FormState {
@@ -40,7 +41,7 @@ function toForm(n: Negocio): FormState {
   }
 }
 
-export default function EditNegocioModal({ isOpen, onClose, negocio }: Props) {
+export default function EditNegocioModal({ isOpen, onClose, negocio, planes }: Props) {
   const [form, setForm] = useState<FormState>(() => toForm(negocio))
   const [errors, setErrors] = useState<FormErrors>({})
   const [serverError, setServerError] = useState<string | null>(null)
@@ -228,9 +229,9 @@ export default function EditNegocioModal({ isOpen, onClose, negocio }: Props) {
               <div>
                 <label className="input-label">Plan</label>
                 <select name="plantipo" value={form.plantipo} onChange={handleChange} className="input">
-                  <option value="basic">Basic</option>
-                  <option value="pro">Pro</option>
-                  <option value="enterprise">Enterprise</option>
+                  {planes.map(p => (
+                    <option key={p.id} value={p.nombre}>{p.nombre}</option>
+                  ))}
                 </select>
               </div>
               <div>
