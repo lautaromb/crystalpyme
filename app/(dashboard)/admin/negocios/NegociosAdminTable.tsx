@@ -1,32 +1,38 @@
 'use client'
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { Pencil, Search, ChevronDown, Ban, CheckCircle } from 'lucide-react'
 import EditNegocioModal from './EditNegocioModal'
 import { cambiarEstadoNegocio } from './actions'
-import type { Negocio, NegocioEstado } from '@/types'
+import type { Negocio, NegocioEstado, PlanSaaS } from '@/types'
 
-const PLAN_BADGE: Record<string, string> = {
-  basic: 'badge-gray',
-  pro: 'badge-blue',
-  enterprise: 'badge bg-purple-50 text-purple-700 border border-purple-200',
-}
-const PLAN_LABEL: Record<string, string> = {
-  basic: 'Basic',
-  pro: 'Pro',
-  enterprise: 'Enterprise',
+function getEstadoEfectivo(n: Negocio): NegocioEstado | 'vencido' {
+  if (n.estado === 'suspendido' || n.estado === 'inactive') return n.estado
+  if (n.proximopago && new Date(n.proximopago) < new Date()) return 'vencido'
+  return n.estado
 }
 
-const ESTADO_BADGE: Record<NegocioEstado, string> = {
+function planBadgeClass(nombre: string): string {
+  const n = nombre.toLowerCase()
+  if (n === 'basic') return 'badge-gray'
+  if (n === 'pro') return 'badge-blue'
+  if (n === 'enterprise') return 'badge bg-purple-50 text-purple-700 border border-purple-200'
+  return 'badge-blue'
+}
+
+const ESTADO_BADGE: Record<NegocioEstado | 'vencido', string> = {
   active: 'badge-green',
   trial: 'badge-yellow',
   inactive: 'badge-gray',
   suspendido: 'badge-red',
+  vencido: 'badge-red',
 }
-const ESTADO_LABEL: Record<NegocioEstado, string> = {
+const ESTADO_LABEL: Record<NegocioEstado | 'vencido', string> = {
   active: 'Activo',
   trial: 'Trial',
   inactive: 'Inactivo',
   suspendido: 'Suspendido',
+  vencido: 'Vencido',
 }
 
 function paymentBadge(proximopago: string | null | undefined) {
@@ -49,9 +55,10 @@ const ESTADO_FILTER_OPTIONS: { value: string; label: string }[] = [
 
 interface Props {
   negocios: Negocio[]
+  planes: PlanSaaS[]
 }
 
-export default function NegociosAdminTable({ negocios }: Props) {
+export default function NegociosAdminTable({ negocios, planes }: Props) {
   const [search, setSearch] = useState('')
   const [estadoFilter, setEstadoFilter] = useState('')
   const [editando, setEditando] = useState<Negocio | null>(null)
@@ -143,7 +150,12 @@ export default function NegociosAdminTable({ negocios }: Props) {
                 <tr key={n.id} className="hover:bg-blue-50/30 transition-colors duration-100">
                   {/* Nombre + rubro */}
                   <td className="px-4 py-3">
-                    <p className="font-semibold text-slate-900">{n.nombre}</p>
+                    <Link
+                      href={`/admin/negocios/${n.id}`}
+                      className="font-semibold text-slate-900 hover:text-blue-600 transition-colors"
+                    >
+                      {n.nombre}
+                    </Link>
                     {n.rubro && (
                       <p className="text-xs text-slate-500 mt-0.5">{n.rubro}</p>
                     )}
@@ -154,15 +166,16 @@ export default function NegociosAdminTable({ negocios }: Props) {
                   </td>
                   {/* Plan badge */}
                   <td className="px-4 py-3">
-                    <span className={PLAN_BADGE[n.plantipo] ?? 'badge-gray'}>
-                      {PLAN_LABEL[n.plantipo] ?? n.plantipo}
+                    <span className={planBadgeClass(n.plantipo)}>
+                      {n.plantipo}
                     </span>
                   </td>
                   {/* Estado badge */}
                   <td className="px-4 py-3">
-                    <span className={ESTADO_BADGE[n.estado]}>
-                      {ESTADO_LABEL[n.estado]}
-                    </span>
+                    {(() => {
+                      const e = getEstadoEfectivo(n)
+                      return <span className={ESTADO_BADGE[e]}>{ESTADO_LABEL[e]}</span>
+                    })()}
                   </td>
                   {/* Próximo pago */}
                   <td className="px-4 py-3">
@@ -233,6 +246,7 @@ export default function NegociosAdminTable({ negocios }: Props) {
           isOpen={modalEditOpen}
           onClose={() => { setModalEditOpen(false); setEditando(null) }}
           negocio={editando}
+          planes={planes}
         />
       )}
     </>

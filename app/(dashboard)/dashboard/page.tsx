@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import {
   Building2, TrendingUp, AlertTriangle, Clock,
   ArrowUpRight, ShoppingCart, Users, Package, CreditCard, UserCheck,
@@ -247,7 +248,11 @@ export default async function DashboardPage() {
             {alertas.slice(0, 5).map(n => {
               const estado = getEstadoPago(n.proximopago)
               return (
-                <div key={n.id} className="flex items-center justify-between bg-white rounded-lg px-4 py-2.5 border border-amber-100">
+                <Link
+                  key={n.id}
+                  href={`/admin/negocios/${n.id}`}
+                  className="flex items-center justify-between bg-white rounded-lg px-4 py-2.5 border border-amber-100 hover:border-amber-300 hover:shadow-sm transition-all"
+                >
                   <div>
                     <span className="text-sm font-medium text-gray-900">{n.nombre}</span>
                     {n.rubro && <span className="text-xs text-gray-400 ml-2">{n.rubro}</span>}
@@ -260,7 +265,7 @@ export default async function DashboardPage() {
                       ? <span className="badge-red">Vencido</span>
                       : <span className="badge-yellow">Próximo</span>}
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
