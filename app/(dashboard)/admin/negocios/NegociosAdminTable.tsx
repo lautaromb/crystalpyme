@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Pencil, Search, ChevronDown, Ban, CheckCircle } from 'lucide-react'
+import { Pencil, Search, ChevronDown, Ban, CheckCircle, ArrowRight, Globe } from 'lucide-react'
 import EditNegocioModal from './EditNegocioModal'
 import { cambiarEstadoNegocio } from './actions'
 import type { Negocio, NegocioEstado, PlanSaaS } from '@/types'
@@ -159,6 +159,15 @@ export default function NegociosAdminTable({ negocios, planes }: Props) {
                     {n.rubro && (
                       <p className="text-xs text-slate-500 mt-0.5">{n.rubro}</p>
                     )}
+                    {(n as any).slug ? (
+                      <p className="text-xs text-emerald-600 mt-0.5 flex items-center gap-1">
+                        <Globe size={10} /> /p/{(n as any).slug}
+                      </p>
+                    ) : (
+                      <Link href={`/admin/negocios/${n.id}`} className="text-xs text-amber-600 hover:text-amber-700 mt-0.5 flex items-center gap-1">
+                        Sin página pública
+                      </Link>
+                    )}
                   </td>
                   {/* Email */}
                   <td className="px-4 py-3 text-slate-700">
@@ -199,6 +208,15 @@ export default function NegociosAdminTable({ negocios, planes }: Props) {
                   {/* Acciones */}
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
+                      <Link
+                        href={`/admin/negocios/${n.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                                   bg-slate-50 text-slate-600 border border-slate-200
+                                   hover:bg-slate-100 transition-colors duration-150"
+                        title="Ver detalle"
+                      >
+                        <ArrowRight size={12} /> Ver
+                      </Link>
                       <button
                         onClick={() => openEdit(n)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
