@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo } from 'react'
+import Link from 'next/link'
 import { ArrowUpRight, CheckCircle2, ChevronUp, ChevronDown, ChevronsUpDown, Search, SlidersHorizontal, Plus } from 'lucide-react'
 import { marcarPagoRecibido } from './actions'
 // crearCliente se usa dentro de NuevoClienteModal
@@ -214,7 +215,9 @@ export default function NegociosTable({ negocios, planes }: { negocios: Negocio[
                 className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${i === datos.length - 1 ? 'border-0' : ''}`}
               >
                 <td className="px-6 py-3">
-                  <div className="font-medium text-gray-900">{n.nombre}</div>
+                  <Link href={`/admin/negocios/${n.id}`} className="font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                    {n.nombre}
+                  </Link>
                   {n.rubro && <div className="text-xs text-gray-400">{n.rubro}</div>}
                 </td>
                 <td className="px-6 py-3"><BadgeEstado estado={n.estado} /></td>

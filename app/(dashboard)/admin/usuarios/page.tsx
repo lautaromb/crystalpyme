@@ -21,8 +21,8 @@ export default async function UsuariosPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-bold text-2xl text-slate-100">Usuarios</h1>
-          <p className="text-sm text-slate-500 mt-1">{usuarios?.length ?? 0} usuarios registrados</p>
+          <h1 className="page-header">Usuarios</h1>
+          <p className="text-sm text-slate-500 mt-1.5 ml-4">{usuarios?.length ?? 0} usuarios registrados</p>
         </div>
         <NuevoUsuarioModal tenants={tenants ?? []} />
       </div>

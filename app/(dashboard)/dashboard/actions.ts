@@ -7,18 +7,37 @@ import { revalidatePath } from 'next/cache'
 export async function marcarPagoRecibido(negocioId: string, proximopagoActual: string | null) {
   const supabase = await createClient()
 
+  const { data: negocio } = await supabase
+    .from('negocio')
+    .select('preciomensual')
+    .eq('id', negocioId)
+    .single()
+
   const base = proximopagoActual ? new Date(proximopagoActual) : new Date()
   const siguiente = new Date(base)
   siguiente.setMonth(siguiente.getMonth() + 1)
 
-  const { error } = await supabase
-    .from('negocio')
-    .update({ proximopago: siguiente.toISOString().split('T')[0] })
-    .eq('id', negocioId)
+  const [{ error: updateError }, { error: pagoError }] = await Promise.all([
+    supabase
+      .from('negocio')
+      .update({ proximopago: siguiente.toISOString().split('T')[0] })
+      .eq('id', negocioId),
+    supabase
+      .from('pago')
+      .insert({
+        negocio_id: negocioId,
+        monto: negocio?.preciomensual ?? 0,
+        fecha: new Date().toISOString().split('T')[0],
+        estado: 'pagado',
+        metodo: 'manual',
+      }),
+  ])
 
-  if (error) throw new Error(error.message)
+  if (updateError) throw new Error(updateError.message)
+  if (pagoError) throw new Error(pagoError.message)
 
   revalidatePath('/dashboard')
+  revalidatePath('/admin/negocios')
 }
 
 export async function crearCliente(data: {
