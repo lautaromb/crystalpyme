@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { generateSlug } from '@/lib/slug'
 
 export async function marcarPagoRecibido(negocioId: string, proximopagoActual: string | null) {
   const supabase = await createClient()
@@ -65,7 +66,18 @@ export async function crearCliente(data: {
 
   if (tenantError) throw new Error(`Error al crear tenant: ${tenantError.message}`)
 
-  // 2. Crear negocio vinculado al tenant
+  // 2. Crear negocio vinculado al tenant — generar slug único
+  const baseSlug = generateSlug(data.nombre)
+  let slug = baseSlug
+  let attempt = 0
+  while (true) {
+    const { data: existing } = await supabase
+      .from('negocio').select('id').eq('slug', slug).maybeSingle()
+    if (!existing) break
+    attempt++
+    slug = `${baseSlug}-${attempt}`
+  }
+
   const { data: negocio, error: negocioError } = await supabase
     .from('negocio')
     .insert({
@@ -78,6 +90,7 @@ export async function crearCliente(data: {
       preciomensual: data.preciomensual ?? null,
       proximopago: data.proximopago ?? null,
       tenant_id: tenant.id,
+      slug,
       fechacreacion: new Date().toISOString().split('T')[0],
     })
     .select('id')

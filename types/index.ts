@@ -31,6 +31,8 @@ export interface Negocio {
   id: string
   tenant_id?: string | null
   nombre: string
+  slug?: string | null
+  descripcion?: string | null
   razonsocial?: string | null
   rubro?: string | null
   direccion?: string | null

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Building2 } from 'lucide-react'
+import { ArrowLeft, Building2, ExternalLink, Globe } from 'lucide-react'
 import type { Negocio, Pago, PlanSaaS } from '@/types'
 import AccionesNegocio from './AccionesNegocio'
 
@@ -146,6 +146,11 @@ export default async function NegocioDetallePage({
           {/* Info general */}
           <div className="card">
             <h2 className="font-semibold text-slate-900 mb-4">Información general</h2>
+            {n.descripcion && (
+              <p className="text-sm text-slate-600 mb-4 pb-4 border-b border-gray-100 italic">
+                &ldquo;{n.descripcion}&rdquo;
+              </p>
+            )}
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
               {[
                 { label: 'Razón social', value: n.razonsocial },
@@ -221,8 +226,43 @@ export default async function NegocioDetallePage({
           </div>
         </div>
 
-        {/* Right: facturación */}
+        {/* Right: página pública + facturación */}
         <div className="space-y-6">
+          {/* Página pública */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4">
+              <Globe size={15} className="text-blue-500" />
+              <h2 className="font-semibold text-slate-900">Página pública</h2>
+            </div>
+            {n.slug ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+                  <span className="text-slate-400 text-xs">/p/</span>
+                  <span className="text-slate-700 text-sm font-medium flex-1">{n.slug}</span>
+                </div>
+                <Link
+                  href={`/p/${n.slug}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  <ExternalLink size={12} /> Ver página pública
+                </Link>
+                {n.descripcion && (
+                  <p className="text-xs text-slate-500 italic border-t border-gray-100 pt-3">
+                    &ldquo;{n.descripcion}&rdquo;
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-slate-500 mb-2">Sin página configurada</p>
+                <p className="text-xs text-slate-400">
+                  Editá el negocio y asigná una URL para activar la página pública.
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="card">
             <h2 className="font-semibold text-slate-900 mb-4">Facturación</h2>
             <dl className="space-y-4 text-sm">

@@ -7,6 +7,8 @@ export async function editarNegocio(
   id: string,
   data: {
     nombre: string
+    slug?: string
+    descripcion?: string
     razonsocial?: string
     rubro?: string
     email?: string
@@ -23,6 +25,8 @@ export async function editarNegocio(
     .from('negocio')
     .update({
       nombre: data.nombre,
+      slug: data.slug || null,
+      descripcion: data.descripcion || null,
       razonsocial: data.razonsocial || null,
       rubro: data.rubro || null,
       email: data.email || null,
@@ -37,6 +41,7 @@ export async function editarNegocio(
   if (error) throw new Error(error.message)
 
   revalidatePath('/admin/negocios')
+  revalidatePath(`/admin/negocios/${id}`)
   revalidatePath('/dashboard')
 }
 

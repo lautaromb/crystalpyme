@@ -13,6 +13,8 @@ interface Props {
 
 interface FormState {
   nombre: string
+  slug: string
+  descripcion: string
   razonsocial: string
   rubro: string
   email: string
@@ -30,6 +32,8 @@ interface FormErrors {
 function toForm(n: Negocio): FormState {
   return {
     nombre: n.nombre,
+    slug: n.slug ?? '',
+    descripcion: n.descripcion ?? '',
     razonsocial: n.razonsocial ?? '',
     rubro: n.rubro ?? '',
     email: n.email ?? '',
@@ -101,6 +105,8 @@ export default function EditNegocioModal({ isOpen, onClose, negocio, planes }: P
     try {
       await editarNegocio(negocio.id, {
         nombre: form.nombre.trim(),
+        slug: form.slug.trim() || undefined,
+        descripcion: form.descripcion.trim() || undefined,
         razonsocial: form.razonsocial.trim() || undefined,
         rubro: form.rubro.trim() || undefined,
         email: form.email.trim() || undefined,
@@ -173,6 +179,37 @@ export default function EditNegocioModal({ isOpen, onClose, negocio, planes }: P
               {errors.nombre && (
                 <p className="text-red-600 text-xs mt-1">{errors.nombre}</p>
               )}
+            </div>
+
+            {/* Descripción */}
+            <div>
+              <label className="input-label">Descripción pública</label>
+              <textarea
+                name="descripcion"
+                value={form.descripcion}
+                onChange={e => setForm(prev => ({ ...prev, descripcion: e.target.value }))}
+                className="input resize-none"
+                rows={2}
+                placeholder="Breve descripción del negocio para su página pública…"
+              />
+            </div>
+
+            {/* Slug */}
+            <div>
+              <label className="input-label">URL pública</label>
+              <div className="flex items-center gap-0 rounded-lg border border-gray-300 overflow-hidden focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+                <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-sm border-r border-gray-300 whitespace-nowrap">
+                  /p/
+                </span>
+                <input
+                  name="slug"
+                  value={form.slug}
+                  onChange={handleChange}
+                  className="flex-1 px-3 py-2.5 text-sm bg-white text-gray-900 outline-none"
+                  placeholder="mi-negocio"
+                />
+              </div>
+              <p className="text-xs text-slate-400 mt-1">Solo letras minúsculas, números y guiones</p>
             </div>
 
             {/* Razón social + Rubro */}
