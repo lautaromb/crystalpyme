@@ -71,7 +71,7 @@ export default function UsuariosTable({ usuarios }: { usuarios: UsuarioConTenant
                     {ROL_LABEL[u.rol] ?? u.rol}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-400 text-xs">{(u as any).tenant?.nombre ?? '—'}</td>
+                <td className="px-4 py-3 text-slate-400 text-xs">{(u as Usuario & { tenant?: { nombre?: string } | null }).tenant?.nombre ?? '—'}</td>
                 <td className="px-4 py-3">
                   {u.activo
                     ? <span className="badge-green"><CheckCircle2 size={10} /> Activo</span>
