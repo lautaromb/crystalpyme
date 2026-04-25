@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo } from 'react'
-import { Package, AlertCircle, Plus, Search, Tag, Pencil, Trash2, X, Loader2 } from 'lucide-react'
+import { Package, Plus, Search, Pencil, Trash2, X, Loader2 } from 'lucide-react'
 import type { Articulo } from '@/types'
 import { crearProducto, actualizarProducto, eliminarProducto } from './actions'
 
@@ -12,7 +12,6 @@ interface Props {
 }
 
 type FormState = {
-  codigo: string
   nombre: string
   descripcion: string
   precio: string
@@ -23,7 +22,7 @@ type FormState = {
 }
 
 const emptyForm = (negocioId: string): FormState => ({
-  codigo: '', nombre: '', descripcion: '', precio: '', stock: '0',
+  nombre: '', descripcion: '', precio: '', stock: '0',
   stockminimo: '', categoria: '', negocio_id: negocioId,
 })
 
@@ -106,7 +105,6 @@ export default function ProductosClient({ articulos, negocios, isSuper }: Props)
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700">
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Código</th>
                   <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Nombre</th>
                   {isSuper && <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Negocio</th>}
                   <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Categoría</th>
@@ -122,12 +120,18 @@ export default function ProductosClient({ articulos, negocios, isSuper }: Props)
                   const agotado = (a.stock ?? 0) === 0
                   return (
                     <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors group">
-                      <td className="px-6 py-3.5 text-xs font-mono text-gray-500 dark:text-slate-400">{a.codigo}</td>
                       <td className="px-6 py-3.5">
-                        <div className="text-sm font-medium text-gray-800 dark:text-slate-200">{a.nombre}</div>
-                        {a.descripcion && (
-                          <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5 truncate max-w-xs">{a.descripcion}</div>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 shrink-0">
+                            {a.codigo}
+                          </span>
+                          <div>
+                            <div className="text-sm font-medium text-gray-800 dark:text-slate-200">{a.nombre}</div>
+                            {a.descripcion && (
+                              <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5 truncate max-w-xs">{a.descripcion}</div>
+                            )}
+                          </div>
+                        </div>
                       </td>
                       {isSuper && (
                         <td className="px-6 py-3.5 text-xs text-gray-500 dark:text-slate-400">
@@ -179,25 +183,15 @@ export default function ProductosClient({ articulos, negocios, isSuper }: Props)
       </div>
 
       {creating && (
-        <ProductoModal
-          mode="create"
-          negocios={negocios}
-          onClose={() => setCreating(false)}
-        />
+        <ProductoModal mode="create" negocios={negocios} onClose={() => setCreating(false)} />
       )}
       {editing && (
-        <ProductoModal
-          mode="edit"
-          articulo={editing}
-          negocios={negocios}
-          onClose={() => setEditing(null)}
-        />
+        <ProductoModal mode="edit" articulo={editing} negocios={negocios} onClose={() => setEditing(null)} />
       )}
     </>
   )
 }
 
-/* ── Modal ──────────────────────────────────── */
 function ProductoModal({ mode, articulo, negocios, onClose }: {
   mode: 'create' | 'edit'
   articulo?: Articulo
@@ -205,7 +199,7 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
   onClose: () => void
 }) {
   const [form, setForm] = useState<FormState>(() => articulo ? {
-    codigo: articulo.codigo, nombre: articulo.nombre,
+    nombre: articulo.nombre,
     descripcion: articulo.descripcion ?? '',
     precio: articulo.precio.toString(),
     stock: (articulo.stock ?? 0).toString(),
@@ -222,9 +216,7 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
 
   function submit() {
     setError(null)
-    if (!form.codigo.trim() || !form.nombre.trim()) {
-      setError('Código y nombre son obligatorios'); return
-    }
+    if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
     if (!form.negocio_id) { setError('Elegí un negocio'); return }
     const precio = Number(form.precio)
     if (Number.isNaN(precio) || precio < 0) { setError('Precio inválido'); return }
@@ -237,16 +229,16 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
       try {
         if (mode === 'create') {
           await crearProducto({
-            codigo: form.codigo, nombre: form.nombre,
-            descripcion: form.descripcion || null, precio, stock,
-            stockminimo, categoria: form.categoria || null,
+            nombre: form.nombre, descripcion: form.descripcion || null,
+            precio, stock, stockminimo,
+            categoria: form.categoria || null,
             negocio_id: form.negocio_id,
           })
         } else if (articulo) {
           await actualizarProducto(articulo.id, {
-            codigo: form.codigo, nombre: form.nombre,
-            descripcion: form.descripcion || null, precio, stock,
-            stockminimo, categoria: form.categoria || null,
+            nombre: form.nombre, descripcion: form.descripcion || null,
+            precio, stock, stockminimo,
+            categoria: form.categoria || null,
           })
         }
         onClose()
@@ -273,22 +265,21 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {mode === 'create' ? 'Nuevo producto' : 'Editar producto'}
-          </h3>
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              {mode === 'create' ? 'Nuevo producto' : 'Editar producto'}
+            </h3>
+            {mode === 'edit' && articulo && (
+              <span className="text-xs font-mono text-gray-400 dark:text-slate-500">{articulo.codigo}</span>
+            )}
+          </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18}/></button>
         </div>
 
         <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-1">
-              <label className="input-label">Código *</label>
-              <input className="input" value={form.codigo} onChange={e => set('codigo', e.target.value)} placeholder="P001" autoFocus />
-            </div>
-            <div className="col-span-2">
-              <label className="input-label">Nombre *</label>
-              <input className="input" value={form.nombre} onChange={e => set('nombre', e.target.value)} />
-            </div>
+          <div>
+            <label className="input-label">Nombre *</label>
+            <input className="input" value={form.nombre} onChange={e => set('nombre', e.target.value)} autoFocus />
           </div>
 
           <div>

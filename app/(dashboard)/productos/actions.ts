@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache'
 import { getAuthScope, assertNegocioAllowed } from '@/lib/auth/scope'
 
 export interface ProductoInput {
-  codigo: string
   nombre: string
   descripcion?: string | null
   precio: number
@@ -15,15 +14,32 @@ export interface ProductoInput {
   negocio_id: string
 }
 
+async function generarCodigo(supabase: Awaited<ReturnType<typeof createClient>>, negocio_id: string): Promise<string> {
+  const { data } = await supabase
+    .from('articulo')
+    .select('codigo')
+    .eq('negocio_id', negocio_id)
+    .like('codigo', 'P%')
+    .order('codigo', { ascending: false })
+    .limit(1)
+    .single()
+
+  const ultimo = data?.codigo ?? 'P000'
+  const num = parseInt(ultimo.replace(/\D/g, ''), 10) || 0
+  return `P${String(num + 1).padStart(3, '0')}`
+}
+
 export async function crearProducto(input: ProductoInput) {
   const scope = await getAuthScope()
   assertNegocioAllowed(scope, input.negocio_id)
 
   const supabase = await createClient()
+  const codigo = await generarCodigo(supabase, input.negocio_id)
+
   const { data, error } = await supabase
     .from('articulo')
     .insert({
-      codigo: input.codigo.trim(),
+      codigo,
       nombre: input.nombre.trim(),
       descripcion: input.descripcion?.trim() || null,
       precio: input.precio,
@@ -42,7 +58,7 @@ export async function crearProducto(input: ProductoInput) {
   return data.id as string
 }
 
-export async function actualizarProducto(id: string, patch: Partial<ProductoInput>) {
+export async function actualizarProducto(id: string, patch: Omit<Partial<ProductoInput>, 'negocio_id'>) {
   const scope = await getAuthScope()
   const supabase = await createClient()
 
@@ -52,7 +68,6 @@ export async function actualizarProducto(id: string, patch: Partial<ProductoInpu
   assertNegocioAllowed(scope, existing.negocio_id)
 
   const { error } = await supabase.from('articulo').update({
-    ...(patch.codigo !== undefined && { codigo: patch.codigo.trim() }),
     ...(patch.nombre !== undefined && { nombre: patch.nombre.trim() }),
     ...(patch.descripcion !== undefined && { descripcion: patch.descripcion?.trim() || null }),
     ...(patch.precio !== undefined && { precio: patch.precio }),
