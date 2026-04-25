@@ -7,15 +7,18 @@ type UsuarioConTenant = Usuario & { tenant?: { nombre: string } | null }
 
 const ROL_BADGE: Record<string, string> = {
   superadmin: 'badge-red',
-  admin: 'badge-blue',
-  vendedor: 'badge-yellow',
-  cliente: 'badge-gray',
+  suscriptor: 'badge-blue',
+  empleado: 'badge-yellow',
 }
 const ROL_LABEL: Record<string, string> = {
   superadmin: 'Super Admin',
-  admin: 'Admin',
-  vendedor: 'Vendedor',
-  cliente: 'Cliente',
+  suscriptor: 'Suscriptor',
+  empleado: 'Empleado',
+}
+const SUBROLE_LABEL: Record<string, string> = {
+  owner: 'Owner',
+  manager: 'Encargado',
+  staff: 'Dependiente',
 }
 
 export default function UsuariosTable({ usuarios }: { usuarios: UsuarioConTenant[] }) {
@@ -51,9 +54,8 @@ export default function UsuariosTable({ usuarios }: { usuarios: UsuarioConTenant
           >
             <option value="todos">Todos los roles</option>
             <option value="superadmin">Super Admin</option>
-            <option value="admin">Admin</option>
-            <option value="vendedor">Vendedor</option>
-            <option value="cliente">Cliente</option>
+            <option value="suscriptor">Suscriptor</option>
+            <option value="empleado">Empleado</option>
           </select>
           <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         </div>
@@ -91,10 +93,15 @@ export default function UsuariosTable({ usuarios }: { usuarios: UsuarioConTenant
                 </div>
               </td>
               <td className="px-4 py-3">
-                <span className={ROL_BADGE[u.rol] ?? 'badge-gray'}>
-                  {u.rol === 'superadmin' && <Shield size={10} />}
-                  {ROL_LABEL[u.rol] ?? u.rol}
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span className={ROL_BADGE[u.rol] ?? 'badge-gray'}>
+                    {u.rol === 'superadmin' && <Shield size={10} />}
+                    {ROL_LABEL[u.rol] ?? u.rol}
+                  </span>
+                  {u.sub_rol && (
+                    <span className="badge-gray text-[10px]">{SUBROLE_LABEL[u.sub_rol] ?? u.sub_rol}</span>
+                  )}
+                </div>
               </td>
               <td className="px-4 py-3 text-slate-600 text-sm">
                 {(u as UsuarioConTenant).tenant?.nombre ?? <span className="text-slate-400">—</span>}

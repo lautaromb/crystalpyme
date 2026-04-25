@@ -11,7 +11,7 @@ export default function NuevoUsuarioModal({ tenants }: { tenants: Tenant[] }) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [form, setForm] = useState({
-    nombre: '', username: '', email: '', password: '', rol: 'admin', tenant_id: tenants[0]?.id ?? '',
+    nombre: '', username: '', email: '', password: '', rol: 'suscriptor', tenant_id: tenants[0]?.id ?? '',
   })
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -19,7 +19,7 @@ export default function NuevoUsuarioModal({ tenants }: { tenants: Tenant[] }) {
   }
 
   function reset() {
-    setForm({ nombre: '', username: '', email: '', password: '', rol: 'admin', tenant_id: tenants[0]?.id ?? '' })
+    setForm({ nombre: '', username: '', email: '', password: '', rol: 'suscriptor', tenant_id: tenants[0]?.id ?? '' })
     setError(null)
     setSuccess(false)
   }
@@ -102,8 +102,7 @@ export default function NuevoUsuarioModal({ tenants }: { tenants: Tenant[] }) {
                   <div>
                     <label className="input-label">Rol</label>
                     <select name="rol" value={form.rol} onChange={handleChange} className="input">
-                      <option value="admin">Admin</option>
-                      <option value="vendedor">Vendedor</option>
+                      <option value="suscriptor">Suscriptor</option>
                     </select>
                   </div>
                   <div>
