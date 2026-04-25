@@ -1,4 +1,18 @@
 export type Role = 'superadmin' | 'suscriptor' | 'empleado'
+
+export interface Categoria {
+  id: number
+  nombre: string
+  icono: string
+  orden: number
+  subcategorias?: Subcategoria[]
+}
+
+export interface Subcategoria {
+  id: number
+  categoria_id: number
+  nombre: string
+}
 export type SubRol = 'owner' | 'manager' | 'staff'
 export type Plan = 'free' | 'starter' | 'pro' | 'enterprise'
 export type TenantPlan = string
@@ -86,6 +100,8 @@ export interface Articulo {
   stockminimo?: number | null
   negocio_id: string
   categoria?: string | null
+  categoria_id?: number | null
+  subcategorias?: Subcategoria[]
   imagen_url?: string | null
   fechacreacion: string
   tenant_id: string

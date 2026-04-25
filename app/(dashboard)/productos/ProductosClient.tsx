@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useTransition, useMemo } from 'react'
-import { Package, Plus, Search, Pencil, Trash2, X, Loader2 } from 'lucide-react'
-import type { Articulo } from '@/types'
+import { Package, Plus, Search, Pencil, Trash2, X, Loader2, ChevronDown } from 'lucide-react'
+import type { Articulo, Categoria, Subcategoria } from '@/types'
 import { crearProducto, actualizarProducto, eliminarProducto } from './actions'
 
 interface Props {
   articulos: Articulo[]
+  categorias: Categoria[]
   negocios: { id: string; nombre: string }[]
   isSuper: boolean
 }
@@ -17,33 +18,37 @@ type FormState = {
   precio: string
   stock: string
   stockminimo: string
-  categoria: string
+  categoria_id: string
+  subcategoria_ids: number[]
   negocio_id: string
 }
 
 const emptyForm = (negocioId: string): FormState => ({
   nombre: '', descripcion: '', precio: '', stock: '0',
-  stockminimo: '', categoria: '', negocio_id: negocioId,
+  stockminimo: '', categoria_id: '', subcategoria_ids: [], negocio_id: negocioId,
 })
 
-export default function ProductosClient({ articulos, negocios, isSuper }: Props) {
+export default function ProductosClient({ articulos, categorias, negocios, isSuper }: Props) {
   const [search, setSearch] = useState('')
-  const [filterNegocio, setFilterNegocio] = useState<string>('todos')
+  const [filterNegocio, setFilterNegocio] = useState('todos')
+  const [filterCategoria, setFilterCategoria] = useState('todas')
   const [editing, setEditing] = useState<Articulo | null>(null)
   const [creating, setCreating] = useState(false)
 
   const negocioMap = useMemo(() => new Map(negocios.map(n => [n.id, n.nombre])), [negocios])
+  const categoriaMap = useMemo(() => new Map(categorias.map(c => [c.id, c])), [categorias])
 
   const filtered = useMemo(() => articulos.filter(a => {
     if (filterNegocio !== 'todos' && a.negocio_id !== filterNegocio) return false
+    if (filterCategoria !== 'todas' && String(a.categoria_id) !== filterCategoria) return false
     if (search) {
       const s = search.toLowerCase()
       return a.nombre.toLowerCase().includes(s)
-        || a.codigo.toLowerCase().includes(s)
-        || (a.categoria?.toLowerCase().includes(s) ?? false)
+        || (a.codigo?.toLowerCase().includes(s) ?? false)
+        || (a.subcategorias?.some(sc => sc.nombre.toLowerCase().includes(s)) ?? false)
     }
     return true
-  }), [articulos, search, filterNegocio])
+  }), [articulos, search, filterNegocio, filterCategoria])
 
   return (
     <>
@@ -58,14 +63,22 @@ export default function ProductosClient({ articulos, negocios, isSuper }: Props)
       </div>
 
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700 gap-3 flex-wrap">
-          <h2 className="font-semibold text-gray-900 dark:text-white text-sm">Catálogo · {filtered.length}</h2>
-          <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center px-6 py-4 border-b border-gray-200 dark:border-slate-700 gap-3 flex-wrap">
+          <h2 className="font-semibold text-gray-900 dark:text-white text-sm shrink-0">Catálogo · {filtered.length}</h2>
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
+            <select
+              value={filterCategoria}
+              onChange={e => setFilterCategoria(e.target.value)}
+              className="text-xs bg-gray-100 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-2.5 py-1.5 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 h-8"
+            >
+              <option value="todas">Todas las categorías</option>
+              {categorias.map(c => <option key={c.id} value={String(c.id)}>{c.icono} {c.nombre}</option>)}
+            </select>
             {isSuper && negocios.length > 1 && (
               <select
                 value={filterNegocio}
                 onChange={e => setFilterNegocio(e.target.value)}
-                className="text-xs bg-gray-100 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-2.5 py-1.5 font-semibold border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 h-8"
+                className="text-xs bg-gray-100 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-2.5 py-1.5 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 h-8"
               >
                 <option value="todos">Todos los negocios</option>
                 {negocios.map(n => <option key={n.id} value={n.id}>{n.nombre}</option>)}
@@ -76,8 +89,8 @@ export default function ProductosClient({ articulos, negocios, isSuper }: Props)
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar producto..."
-                className="pl-8 pr-4 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-slate-700 border border-transparent dark:text-slate-100 placeholder:text-gray-400 focus:outline-none focus:border-blue-400 h-8 w-52"
+                placeholder="Buscar..."
+                className="pl-8 pr-4 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-slate-700 border border-transparent dark:text-slate-100 placeholder:text-gray-400 focus:outline-none focus:border-blue-400 h-8 w-44"
               />
             </div>
           </div>
@@ -86,15 +99,15 @@ export default function ProductosClient({ articulos, negocios, isSuper }: Props)
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mb-4">
-              <Package size={26} className="text-blue-400 dark:text-blue-500" />
+              <Package size={26} className="text-blue-400" />
             </div>
             <p className="text-sm font-medium text-gray-700 dark:text-slate-300">
-              {search || filterNegocio !== 'todos' ? 'Sin resultados' : 'Sin productos registrados'}
+              {search || filterNegocio !== 'todos' || filterCategoria !== 'todas' ? 'Sin resultados' : 'Sin productos registrados'}
             </p>
             <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 mb-4">
-              {search || filterNegocio !== 'todos' ? 'Probá con otros filtros' : 'Agregá tu primer producto al catálogo'}
+              {search || filterNegocio !== 'todos' || filterCategoria !== 'todas' ? 'Probá con otros filtros' : 'Agregá tu primer producto al catálogo'}
             </p>
-            {!search && filterNegocio === 'todos' && (
+            {!search && filterNegocio === 'todos' && filterCategoria === 'todas' && (
               <button onClick={() => setCreating(true)} className="btn-primary text-xs px-4 py-2 h-auto">
                 <Plus size={14} /> Nuevo producto
               </button>
@@ -111,24 +124,31 @@ export default function ProductosClient({ articulos, negocios, isSuper }: Props)
                   <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Precio</th>
                   <th className="text-center px-6 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Stock</th>
                   <th className="text-center px-6 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Estado</th>
-                  <th className="px-6 py-3"></th>
+                  <th className="px-6 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                 {filtered.map(a => {
                   const bajo = a.stockminimo != null && (a.stock ?? 0) <= a.stockminimo
                   const agotado = (a.stock ?? 0) === 0
+                  const cat = a.categoria_id ? categoriaMap.get(a.categoria_id) : null
                   return (
                     <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors group">
                       <td className="px-6 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 shrink-0">
+                        <div className="flex items-start gap-2">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 shrink-0 mt-0.5">
                             {a.codigo}
                           </span>
                           <div>
                             <div className="text-sm font-medium text-gray-800 dark:text-slate-200">{a.nombre}</div>
-                            {a.descripcion && (
-                              <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5 truncate max-w-xs">{a.descripcion}</div>
+                            {a.subcategorias && a.subcategorias.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {a.subcategorias.map((sc: Subcategoria) => (
+                                  <span key={sc.id} className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                    {sc.nombre}
+                                  </span>
+                                ))}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -138,18 +158,14 @@ export default function ProductosClient({ articulos, negocios, isSuper }: Props)
                           {negocioMap.get(a.negocio_id) ?? '—'}
                         </td>
                       )}
-                      <td className="px-6 py-3.5">
-                        {a.categoria ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300">
-                            {a.categoria}
-                          </span>
-                        ) : <span className="text-xs text-gray-300 dark:text-slate-600">—</span>}
+                      <td className="px-6 py-3.5 text-xs text-gray-500 dark:text-slate-400">
+                        {cat ? <span>{cat.icono} {cat.nombre}</span> : <span className="text-gray-300 dark:text-slate-600">—</span>}
                       </td>
                       <td className="px-6 py-3.5 text-right font-semibold text-gray-900 dark:text-white text-sm tabular-nums">
                         ${Number(a.precio).toLocaleString('es-AR')}
                       </td>
                       <td className="px-6 py-3.5 text-center">
-                        <span className={`text-sm font-semibold tabular-nums ${agotado ? 'text-red-500 dark:text-red-400' : bajo ? 'text-amber-600 dark:text-amber-400' : 'text-gray-800 dark:text-slate-200'}`}>
+                        <span className={`text-sm font-semibold tabular-nums ${agotado ? 'text-red-500' : bajo ? 'text-amber-600' : 'text-gray-800 dark:text-slate-200'}`}>
                           {a.stock ?? 0}
                         </span>
                         {a.stockminimo != null && (
@@ -165,12 +181,8 @@ export default function ProductosClient({ articulos, negocios, isSuper }: Props)
                         </span>
                       </td>
                       <td className="px-6 py-3.5 text-right">
-                        <button
-                          onClick={() => setEditing(a)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600"
-                          title="Editar"
-                        >
-                          <Pencil size={14}/>
+                        <button onClick={() => setEditing(a)} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600">
+                          <Pencil size={14} />
                         </button>
                       </td>
                     </tr>
@@ -183,18 +195,19 @@ export default function ProductosClient({ articulos, negocios, isSuper }: Props)
       </div>
 
       {creating && (
-        <ProductoModal mode="create" negocios={negocios} onClose={() => setCreating(false)} />
+        <ProductoModal mode="create" categorias={categorias} negocios={negocios} onClose={() => setCreating(false)} />
       )}
       {editing && (
-        <ProductoModal mode="edit" articulo={editing} negocios={negocios} onClose={() => setEditing(null)} />
+        <ProductoModal mode="edit" articulo={editing} categorias={categorias} negocios={negocios} onClose={() => setEditing(null)} />
       )}
     </>
   )
 }
 
-function ProductoModal({ mode, articulo, negocios, onClose }: {
+function ProductoModal({ mode, articulo, categorias, negocios, onClose }: {
   mode: 'create' | 'edit'
   articulo?: Articulo
+  categorias: Categoria[]
   negocios: { id: string; nombre: string }[]
   onClose: () => void
 }) {
@@ -204,14 +217,35 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
     precio: articulo.precio.toString(),
     stock: (articulo.stock ?? 0).toString(),
     stockminimo: (articulo.stockminimo ?? '').toString(),
-    categoria: articulo.categoria ?? '',
+    categoria_id: articulo.categoria_id ? String(articulo.categoria_id) : '',
+    subcategoria_ids: articulo.subcategorias?.map(sc => sc.id) ?? [],
     negocio_id: articulo.negocio_id,
   } : emptyForm(negocios[0]?.id ?? ''))
+
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
+  const subcategoriasDisponibles = useMemo<Subcategoria[]>(() => {
+    if (!form.categoria_id) return []
+    const cat = categorias.find(c => c.id === Number(form.categoria_id))
+    return cat?.subcategorias ?? []
+  }, [form.categoria_id, categorias])
+
   function set<K extends keyof FormState>(k: K, v: FormState[K]) {
     setForm(prev => ({ ...prev, [k]: v }))
+  }
+
+  function toggleSubcategoria(id: number) {
+    setForm(prev => ({
+      ...prev,
+      subcategoria_ids: prev.subcategoria_ids.includes(id)
+        ? prev.subcategoria_ids.filter(s => s !== id)
+        : [...prev.subcategoria_ids, id],
+    }))
+  }
+
+  function handleCategoriaChange(val: string) {
+    setForm(prev => ({ ...prev, categoria_id: val, subcategoria_ids: [] }))
   }
 
   function submit() {
@@ -227,19 +261,17 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
 
     start(async () => {
       try {
+        const payload = {
+          nombre: form.nombre,
+          descripcion: form.descripcion || null,
+          precio, stock, stockminimo,
+          categoria_id: form.categoria_id ? Number(form.categoria_id) : null,
+          subcategoria_ids: form.subcategoria_ids,
+        }
         if (mode === 'create') {
-          await crearProducto({
-            nombre: form.nombre, descripcion: form.descripcion || null,
-            precio, stock, stockminimo,
-            categoria: form.categoria || null,
-            negocio_id: form.negocio_id,
-          })
+          await crearProducto({ ...payload, negocio_id: form.negocio_id })
         } else if (articulo) {
-          await actualizarProducto(articulo.id, {
-            nombre: form.nombre, descripcion: form.descripcion || null,
-            precio, stock, stockminimo,
-            categoria: form.categoria || null,
-          })
+          await actualizarProducto(articulo.id, payload)
         }
         onClose()
       } catch (e) {
@@ -252,12 +284,8 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
     if (!articulo) return
     if (!confirm(`¿Eliminar "${articulo.nombre}"?`)) return
     start(async () => {
-      try {
-        await eliminarProducto(articulo.id)
-        onClose()
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Error al eliminar')
-      }
+      try { await eliminarProducto(articulo.id); onClose() }
+      catch (e) { setError(e instanceof Error ? e.message : 'Error al eliminar') }
     })
   }
 
@@ -270,10 +298,10 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
               {mode === 'create' ? 'Nuevo producto' : 'Editar producto'}
             </h3>
             {mode === 'edit' && articulo && (
-              <span className="text-xs font-mono text-gray-400 dark:text-slate-500">{articulo.codigo}</span>
+              <span className="text-xs font-mono text-gray-400">{articulo.codigo}</span>
             )}
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18}/></button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
         </div>
 
         <div className="space-y-3">
@@ -302,20 +330,58 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="input-label">Categoría</label>
-              <input className="input" value={form.categoria} onChange={e => set('categoria', e.target.value)} placeholder="Opcional" />
+          {/* Categoría */}
+          <div>
+            <label className="input-label">Categoría</label>
+            <div className="relative">
+              <select
+                className="input appearance-none pr-8"
+                value={form.categoria_id}
+                onChange={e => handleCategoriaChange(e.target.value)}
+              >
+                <option value="">Sin categoría</option>
+                {categorias.map(c => (
+                  <option key={c.id} value={String(c.id)}>{c.icono} {c.nombre}</option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
-            {mode === 'create' && (
-              <div>
-                <label className="input-label">Negocio *</label>
-                <select className="input" value={form.negocio_id} onChange={e => set('negocio_id', e.target.value)}>
-                  {negocios.map(n => <option key={n.id} value={n.id}>{n.nombre}</option>)}
-                </select>
-              </div>
-            )}
           </div>
+
+          {/* Subcategorías */}
+          {subcategoriasDisponibles.length > 0 && (
+            <div>
+              <label className="input-label">Subcategorías <span className="text-gray-400 font-normal">(podés elegir varias)</span></label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {subcategoriasDisponibles.map(sc => {
+                  const selected = form.subcategoria_ids.includes(sc.id)
+                  return (
+                    <button
+                      key={sc.id}
+                      type="button"
+                      onClick={() => toggleSubcategoria(sc.id)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors
+                        ${selected
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-300 border-gray-300 dark:border-slate-600 hover:border-blue-400'
+                        }`}
+                    >
+                      {sc.nombre}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {mode === 'create' && (
+            <div>
+              <label className="input-label">Negocio *</label>
+              <select className="input" value={form.negocio_id} onChange={e => set('negocio_id', e.target.value)}>
+                {negocios.map(n => <option key={n.id} value={n.id}>{n.nombre}</option>)}
+              </select>
+            </div>
+          )}
 
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -323,9 +389,9 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
         <div className="flex items-center justify-between gap-2 mt-5 pt-4 border-t border-gray-100 dark:border-slate-700">
           {mode === 'edit' ? (
             <button onClick={remove} disabled={pending} className="text-xs text-red-500 hover:text-red-700 font-semibold inline-flex items-center gap-1">
-              <Trash2 size={12}/> Eliminar
+              <Trash2 size={12} /> Eliminar
             </button>
-          ) : <span/>}
+          ) : <span />}
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 dark:text-slate-300">
               Cancelar
@@ -335,7 +401,7 @@ function ProductoModal({ mode, articulo, negocios, onClose }: {
               disabled={pending}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-60"
             >
-              {pending && <Loader2 size={14} className="animate-spin"/>}
+              {pending && <Loader2 size={14} className="animate-spin" />}
               {mode === 'create' ? 'Crear' : 'Guardar'}
             </button>
           </div>

@@ -10,7 +10,8 @@ export interface ProductoInput {
   precio: number
   stock?: number | null
   stockminimo?: number | null
-  categoria?: string | null
+  categoria_id?: number | null
+  subcategoria_ids?: number[]
   negocio_id: string
 }
 
@@ -19,6 +20,7 @@ export async function crearProducto(input: ProductoInput) {
   assertNegocioAllowed(scope, input.negocio_id)
 
   const supabase = await createClient()
+
   const { data, error } = await supabase
     .from('articulo')
     .insert({
@@ -27,7 +29,7 @@ export async function crearProducto(input: ProductoInput) {
       precio: input.precio,
       stock: input.stock ?? 0,
       stockminimo: input.stockminimo ?? null,
-      categoria: input.categoria?.trim() || null,
+      categoria_id: input.categoria_id ?? null,
       negocio_id: input.negocio_id,
       tenant_id: scope.tenantId,
       activo: true,
@@ -39,6 +41,16 @@ export async function crearProducto(input: ProductoInput) {
     if (error.code === '23505') throw new Error('Ya existe un producto con ese código en este negocio')
     throw new Error(error.message)
   }
+
+  if (input.subcategoria_ids?.length) {
+    const rows = input.subcategoria_ids.map(sid => ({
+      articulo_id: data.id,
+      subcategoria_id: sid,
+    }))
+    const { error: errSub } = await supabase.from('articulo_subcategoria').insert(rows)
+    if (errSub) throw new Error(errSub.message)
+  }
+
   revalidatePath('/productos')
   return data.id as string
 }
@@ -58,10 +70,20 @@ export async function actualizarProducto(id: string, patch: Omit<Partial<Product
     ...(patch.precio !== undefined && { precio: patch.precio }),
     ...(patch.stock !== undefined && { stock: patch.stock }),
     ...(patch.stockminimo !== undefined && { stockminimo: patch.stockminimo }),
-    ...(patch.categoria !== undefined && { categoria: patch.categoria?.trim() || null }),
+    ...(patch.categoria_id !== undefined && { categoria_id: patch.categoria_id }),
   }).eq('id', id)
 
   if (error) throw new Error(error.message)
+
+  if (patch.subcategoria_ids !== undefined) {
+    await supabase.from('articulo_subcategoria').delete().eq('articulo_id', id)
+    if (patch.subcategoria_ids.length) {
+      const rows = patch.subcategoria_ids.map(sid => ({ articulo_id: id, subcategoria_id: sid }))
+      const { error: errSub } = await supabase.from('articulo_subcategoria').insert(rows)
+      if (errSub) throw new Error(errSub.message)
+    }
+  }
+
   revalidatePath('/productos')
 }
 

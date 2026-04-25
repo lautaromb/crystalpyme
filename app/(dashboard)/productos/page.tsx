@@ -1,20 +1,38 @@
 import { createClient } from '@/lib/supabase/server'
 import { Package, AlertCircle, Tag } from 'lucide-react'
 import { getAuthScope } from '@/lib/auth/scope'
-import type { Articulo } from '@/types'
+import type { Articulo, Categoria } from '@/types'
 import ProductosClient from './ProductosClient'
 
 export default async function ProductosPage() {
   const scope = await getAuthScope()
   const supabase = await createClient()
 
-  let q = supabase.from('articulo').select('*').is('deleted_at', null).order('nombre')
-  if (!scope.isSuper) q = q.in('negocio_id', scope.negocioIds.length ? scope.negocioIds : ['__none__'])
-  const { data } = await q
+  const [articulosRes, categoriasRes] = await Promise.all([
+    scope.negocioIds.length === 0
+      ? Promise.resolve({ data: [] })
+      : supabase
+          .from('articulo')
+          .select('*, subcategorias:articulo_subcategoria(subcategoria_id, subcategoria:subcategoria(id, nombre, categoria_id))')
+          .is('deleted_at', null)
+          .eq('activo', true)
+          .in('negocio_id', scope.negocioIds)
+          .order('nombre'),
+    supabase
+      .from('categoria')
+      .select('*, subcategorias:subcategoria(id, categoria_id, nombre)')
+      .order('orden'),
+  ])
 
-  const articulos = (data ?? []) as Articulo[]
-  const activos = articulos.filter(a => a.activo)
-  const stockBajo = activos.filter(a => (a.stock ?? 0) <= (a.stockminimo ?? 0) && a.stockminimo)
+  const articulos = (articulosRes.data ?? []).map((a: Record<string, unknown>) => ({
+    ...a,
+    subcategorias: ((a.subcategorias as { subcategoria: unknown }[]) ?? []).map(r => r.subcategoria),
+  })) as Articulo[]
+
+  const categorias = (categoriasRes.data ?? []) as Categoria[]
+
+  const activos = articulos
+  const stockBajo = activos.filter(a => a.stockminimo != null && (a.stock ?? 0) <= a.stockminimo!)
   const sinStock = activos.filter(a => (a.stock ?? 0) === 0)
   const valorInventario = activos.reduce((acc, a) => acc + Number(a.precio) * (a.stock ?? 0), 0)
 
@@ -42,6 +60,7 @@ export default async function ProductosPage() {
 
       <ProductosClient
         articulos={activos}
+        categorias={categorias}
         negocios={scope.negocios}
         isSuper={scope.isSuper}
       />
