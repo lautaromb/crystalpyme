@@ -28,7 +28,13 @@ export async function crearCliente(input: ClienteInput) {
     estado: 'active',
   }).select('id').single()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (error.code === '23505') {
+      if (error.message.includes('email')) throw new Error('Ya existe un cliente activo con ese email en este negocio')
+      if (error.message.includes('telefono')) throw new Error('Ya existe un cliente activo con ese teléfono en este negocio')
+    }
+    throw new Error(error.message)
+  }
   revalidatePath('/clientes')
   return data.id as string
 }
@@ -51,7 +57,13 @@ export async function actualizarCliente(id: string, patch: Partial<ClienteInput>
     ...(patch.estado !== undefined && { estado: patch.estado }),
   }).eq('id', id)
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (error.code === '23505') {
+      if (error.message.includes('email')) throw new Error('Ya existe un cliente activo con ese email en este negocio')
+      if (error.message.includes('telefono')) throw new Error('Ya existe un cliente activo con ese teléfono en este negocio')
+    }
+    throw new Error(error.message)
+  }
   revalidatePath('/clientes')
 }
 

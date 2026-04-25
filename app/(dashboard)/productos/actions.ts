@@ -15,18 +15,9 @@ export interface ProductoInput {
 }
 
 async function generarCodigo(supabase: Awaited<ReturnType<typeof createClient>>, negocio_id: string): Promise<string> {
-  const { data } = await supabase
-    .from('articulo')
-    .select('codigo')
-    .eq('negocio_id', negocio_id)
-    .like('codigo', 'P%')
-    .order('codigo', { ascending: false })
-    .limit(1)
-    .single()
-
-  const ultimo = data?.codigo ?? 'P000'
-  const num = parseInt(ultimo.replace(/\D/g, ''), 10) || 0
-  return `P${String(num + 1).padStart(3, '0')}`
+  const { data, error } = await supabase.rpc('next_articulo_codigo', { p_negocio_id: negocio_id })
+  if (error) throw new Error('No se pudo generar el código del producto')
+  return data as string
 }
 
 export async function crearProducto(input: ProductoInput) {
@@ -53,7 +44,10 @@ export async function crearProducto(input: ProductoInput) {
     .select('id')
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (error.code === '23505') throw new Error('Ya existe un producto con ese código en este negocio')
+    throw new Error(error.message)
+  }
   revalidatePath('/productos')
   return data.id as string
 }
