@@ -14,23 +14,14 @@ export interface ProductoInput {
   negocio_id: string
 }
 
-async function generarCodigo(supabase: Awaited<ReturnType<typeof createClient>>, negocio_id: string): Promise<string> {
-  const { data, error } = await supabase.rpc('next_articulo_codigo', { p_negocio_id: negocio_id })
-  if (error) throw new Error('No se pudo generar el código del producto')
-  return data as string
-}
-
 export async function crearProducto(input: ProductoInput) {
   const scope = await getAuthScope()
   assertNegocioAllowed(scope, input.negocio_id)
 
   const supabase = await createClient()
-  const codigo = await generarCodigo(supabase, input.negocio_id)
-
   const { data, error } = await supabase
     .from('articulo')
     .insert({
-      codigo,
       nombre: input.nombre.trim(),
       descripcion: input.descripcion?.trim() || null,
       precio: input.precio,
