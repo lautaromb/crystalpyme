@@ -4,37 +4,39 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingCart, Package, Users, Megaphone,
   Settings, LogOut, Building2, UserCog, UsersRound,
-  CreditCard, ListChecks,
+  CreditCard, ListChecks, FileText, Target,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Usuario } from '@/types'
 
-// Superadmin gestiona el SaaS; admin/vendedor gestionan su negocio
 const NAV_ITEMS = [
-  { label: 'Dashboard',   href: '/dashboard',             icon: LayoutDashboard, roles: ['superadmin','admin','vendedor'] },
-  { label: 'Negocios',    href: '/admin/negocios',        icon: Building2,       roles: ['superadmin'] },
-  { label: 'Planes',      href: '/admin/planes',          icon: ListChecks,      roles: ['superadmin'] },
-  { label: 'Facturación', href: '/admin/facturacion',     icon: CreditCard,      roles: ['superadmin'] },
-  { label: 'Ventas',      href: '/dashboard/ventas',      icon: ShoppingCart,    roles: ['admin','vendedor'] },
-  { label: 'Productos',   href: '/dashboard/productos',   icon: Package,         roles: ['admin','vendedor'] },
-  { label: 'Clientes',    href: '/dashboard/clientes',    icon: Users,           roles: ['admin','vendedor'] },
-  { label: 'Marketing',   href: '/dashboard/marketing',   icon: Megaphone,       roles: ['admin'] },
-  { label: 'Mi equipo',   href: '/dashboard/equipo',      icon: UsersRound,      roles: ['admin'] },
+  { label: 'Dashboard',   href: '/dashboard',          icon: LayoutDashboard, roles: ['superadmin','suscriptor','empleado'] },
+  { label: 'Negocios',    href: '/admin/negocios',     icon: Building2,       roles: ['superadmin'] },
+  { label: 'Planes',      href: '/admin/planes',       icon: ListChecks,      roles: ['superadmin'] },
+  { label: 'Facturación', href: '/admin/facturacion',  icon: CreditCard,      roles: ['superadmin'] },
+  { label: 'Ventas',      href: '/ventas',             icon: ShoppingCart,    roles: ['superadmin','suscriptor','empleado'] },
+  { label: 'Productos',   href: '/productos',          icon: Package,         roles: ['superadmin','suscriptor','empleado'] },
+  { label: 'Clientes',    href: '/clientes',           icon: Users,           roles: ['superadmin','suscriptor','empleado'] },
+  { label: 'CRM',         href: '/admin/crm',          icon: Target,          roles: ['superadmin','suscriptor'] },
+  { label: 'Formularios', href: '/admin/formularios',  icon: FileText,        roles: ['superadmin','suscriptor'] },
+  { label: 'Marketing',   href: '/marketing',          icon: Megaphone,       roles: ['superadmin','suscriptor','empleado'] },
+  { label: 'Mi equipo',   href: '/equipo',             icon: UsersRound,      roles: ['suscriptor','empleado'] },
 ]
 
 const ADMIN_ITEMS = [
-  { label: 'Usuarios',      href: '/admin/usuarios',          icon: UserCog,  roles: ['superadmin'] },
-  { label: 'Configuración', href: '/dashboard/configuracion', icon: Settings, roles: ['superadmin','admin'] },
+  { label: 'Usuarios',      href: '/admin/usuarios',     icon: UserCog,  roles: ['superadmin'] },
+  { label: 'Configuración', href: '/configuracion',      icon: Settings, roles: ['superadmin','suscriptor'] },
 ]
 
 const ROL_LABEL: Record<string, string> = {
-  superadmin: 'Super Admin', admin: 'Admin', vendedor: 'Vendedor', cliente: 'Cliente',
+  superadmin: 'Super Admin',
+  suscriptor: 'Suscriptor',
+  empleado:   'Empleado',
 }
 const ROL_COLOR: Record<string, string> = {
   superadmin: 'bg-purple-100 text-purple-700',
-  admin: 'bg-blue-100 text-blue-700',
-  vendedor: 'bg-emerald-100 text-emerald-700',
-  cliente: 'bg-gray-100 text-gray-600',
+  suscriptor: 'bg-blue-100 text-blue-700',
+  empleado:   'bg-emerald-100 text-emerald-700',
 }
 
 export default function Sidebar({ usuario }: { usuario: Usuario }) {
