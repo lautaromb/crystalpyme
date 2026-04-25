@@ -325,7 +325,18 @@ function ProductoModal({ mode, articulo, categorias, negocios, onClose }: {
               <input type="number" className="input" value={form.stock} onChange={e => set('stock', e.target.value)} />
             </div>
             <div>
-              <label className="input-label">Stock mínimo</label>
+              <label className="input-label flex items-center gap-1">
+                Stock mínimo
+                <span className="relative group/tip">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 cursor-help">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+                  </svg>
+                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 rounded-lg bg-slate-800 text-white text-[11px] leading-snug px-3 py-2 opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 shadow-lg">
+                    Cuando el stock llegue a este número o menos, el producto se marcará como <strong>Stock bajo</strong> para avisarte que es hora de reponer.
+                    <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                  </span>
+                </span>
+              </label>
               <input type="number" className="input" value={form.stockminimo} onChange={e => set('stockminimo', e.target.value)} placeholder="—" />
             </div>
           </div>
