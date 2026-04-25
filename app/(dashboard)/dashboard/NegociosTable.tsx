@@ -62,7 +62,7 @@ export default function NegociosTable({ negocios }: { negocios: Negocio[] }) {
   const [filtroEstado, setFiltroEstado] = useState('todos')
   const [sortKey, setSortKey] = useState<SortKey>('proximopago')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
-  const [pendingId, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   const [procesando, setProcesando] = useState<string | null>(null)
   const [confirmando, setConfirmando] = useState<string | null>(null)
   const [modalAbierto, setModalAbierto] = useState(false)
